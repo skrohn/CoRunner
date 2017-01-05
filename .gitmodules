@@ -1,0 +1,3 @@
+[submodule "Assets/Plugins/Jetbrains/Editor"]
+	path = Assets/Plugins/Jetbrains/Editor
+	url = https://skrohn@github.com/skrohn/Unity3dRider

@@ -1,63 +1,85 @@
 ﻿using System.Collections;
+using UnityEditor;
 using UnityEngine;
 
 public class Test : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
+	Tests tests = new Tests();
+
+	void Start ()
+	{
 //		CoRunner.Start(coBasic());
-//		CoRunner.Start(coWWW());
+		CoRunner.Start(tests.coWWW());
 //		CoRunner.Start(coIEnumerator());
 //		CoRunner.Start(coRunImmediate());
 //		CoRunner.Start(coMultiYield());
+//		CoRunner.Start(coImmediateMultiYield());
 	}
+}
 
-	IEnumerator coBasic ()
+public class Tests
+{
+	public IEnumerator coImmediateMultiYield ()
 	{
-		Debug.Log(Time.frameCount);
-		yield return null;
-		Debug.Log("coBasic finished " + Time.frameCount);
-	}
-
-	IEnumerator coWWW ()
-	{
-		Debug.Log("start www " + Time.frameCount);
-		yield return new WWW("http://www.google.com");
-		Debug.Log("coWWW finished " + Time.frameCount);
-	}
-
-	IEnumerator coIEnumerator ()
-	{
-		Debug.Log(Time.frameCount);
-		yield return CoRunner.Start(coBasic());
-		Debug.Log("coIEnumerator finished " + Time.frameCount);
-	}
-
-	IEnumerator coRunImmediate ()
-	{
-		Debug.Log(Time.frameCount);
+		var routine = CoRunner.Start(coBasic());
+		var r2 = CoRunner.Start(coYieldOn(routine));
+		Debug.Log("start " + CoRunner.FrameCount);
+		yield return r2;
 		yield return CoRunner.Start(coImmediate());
-		Debug.Log("coRunImmediate finished " + Time.frameCount);
+		yield return CoRunner.Start(coImmediate());
+		Debug.Log("coImmediateMultiYield finished " + CoRunner.FrameCount);
 	}
 
-	IEnumerator coImmediate ()
+	public IEnumerator coBasic ()
 	{
+		Debug.Log(CoRunner.FrameCount);
+		yield return null;
+		Debug.Log("coBasic finished " + CoRunner.FrameCount);
+	}
+
+	public IEnumerator coWWW ()
+	{
+		Debug.Log("start www " + CoRunner.FrameCount);
+		var www = new WWW("http://www.google.com");
+		yield return www;
+		Debug.Log(www.text);
+		Debug.Log("coWWW finished " + CoRunner.FrameCount);
+	}
+
+	public IEnumerator coIEnumerator ()
+	{
+		Debug.Log(CoRunner.FrameCount);
+		yield return CoRunner.Start(coBasic());
+		Debug.Log("coIEnumerator finished " + CoRunner.FrameCount);
+	}
+
+	public IEnumerator coRunImmediate ()
+	{
+		Debug.Log(CoRunner.FrameCount);
+		yield return CoRunner.Start(coImmediate());
+		Debug.Log("coRunImmediate finished " + CoRunner.FrameCount);
+	}
+
+	public IEnumerator coImmediate ()
+	{
+		Debug.Log("start coImmediate " + CoRunner.FrameCount);
 		if (Time.deltaTime < 0) {
 			yield return null;
 		}
-		Debug.Log("coImmediate finished " + Time.frameCount);
+		Debug.Log("coImmediate finished " + CoRunner.FrameCount);
 	}
 
-	IEnumerator coYieldOn (IEnumerator enumerator)
+	public IEnumerator coYieldOn (IEnumerator enumerator)
 	{
 		yield return enumerator;
-		Debug.Log("finished YieldOn " + Time.frameCount);
+		Debug.Log("finished YieldOn " + CoRunner.FrameCount);
 	}
-	IEnumerator coMultiYield ()
+
+	public IEnumerator coMultiYield ()
 	{
 		var routine = CoRunner.Start(coWWW());
 		CoRunner.Start(coYieldOn(routine));
 		yield return CoRunner.Start(coYieldOn(routine));
-		Debug.Log("finished MultiYield " + Time.frameCount);
+		Debug.Log("finished MultiYield " + CoRunner.FrameCount);
 	}
 }

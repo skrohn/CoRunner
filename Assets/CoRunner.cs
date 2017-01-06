@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WooRoutine
-{
-
-}
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public static class CoRunner
 {
@@ -15,13 +14,21 @@ public static class CoRunner
 	private static UniProxy proxy;
 	private static bool isInitialized;
 
+	public static int FrameCount { get; private set; }
+
 	private static void Init ()
 	{
-		if (!proxy) {
-			proxy = new GameObject("UniProxy").AddComponent<UniProxy>();
+		#if UNITY_EDITOR
+		EditorApplication.update += Update;
+		#endif
+
+		if (Application.isPlaying) {
+			if (!proxy) {
+				proxy = new GameObject("UniProxy").AddComponent<UniProxy>();
+			}
+			proxy.onUpdate += Update;
 		}
-		proxy.onUpdate += Update;
-		proxy.onLateUpdate += LateUpdate;
+
 		isInitialized = true;
 	}
 
@@ -29,10 +36,7 @@ public static class CoRunner
 	{
 		if (!isInitialized) Init();
 
-		bool hasNext;
-		do {
-			hasNext = routine.MoveNext();
-		} while (hasNext && routine.Current is IEnumerator && IsFinished((IEnumerator)routine.Current));
+		var hasNext = AdvanceEnumerator(routine);
 
 		if (hasNext) {
 			routinesToAdd.Add(routine);
@@ -40,22 +44,31 @@ public static class CoRunner
 		return routine;
 	}
 
+	static bool AdvanceEnumerator (IEnumerator routine)
+	{
+		bool hasNext;
+		do {
+			hasNext = routine.MoveNext();
+		} while (hasNext && routine.Current is IEnumerator && IsFinished((IEnumerator)routine.Current));
+		return hasNext;
+	}
+
 	public static void Update ()
 	{
+		FrameCount++;
+		AddRoutines();
+		if (routines.Count > 0) Debug.Log("update count: " + routines.Count);
 		routines.RemoveWhere(Process);
 	}
 
-	static bool Process (IEnumerator item) {
-//		Debug.Log("update current: " + item.Current + " count: " + routines.Count);
-		if (ShouldCall(item.Current)) {
-			var result = item.MoveNext();
-			Debug.Log(!result);
-			return !result;
+	static bool Process (IEnumerator routine) {
+		if (ShouldCall(routine.Current)) {
+			return !AdvanceEnumerator(routine);
 		}
 		return false;
 	}
 
-	public static void LateUpdate ()
+	static void AddRoutines ()
 	{
 		foreach (var r in routinesToAdd) {
 			routines.Add(r);

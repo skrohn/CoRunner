@@ -9,8 +9,8 @@ public class Test : MonoBehaviour {
 	void Start ()
 	{
 //		CoRunner.Start(coBasic());
-		CoRunner.Start(tests.coWWW());
-//		CoRunner.Start(coIEnumerator());
+//		CoRunner.Start(tests.coWWW());
+		CoRunner.Start(tests.coIEnumerator());
 //		CoRunner.Start(coRunImmediate());
 //		CoRunner.Start(coMultiYield());
 //		CoRunner.Start(coImmediateMultiYield());
@@ -32,9 +32,9 @@ public class Tests
 
 	public IEnumerator coBasic ()
 	{
-		Debug.Log(CoRunner.FrameCount);
+		Debug.Log("coBasic started " + CoRunner.FrameCount + " " + Time.frameCount);
 		yield return null;
-		Debug.Log("coBasic finished " + CoRunner.FrameCount);
+		Debug.Log("coBasic finished " + CoRunner.FrameCount + " " + Time.frameCount);
 	}
 
 	public IEnumerator coWWW ()
@@ -69,6 +69,13 @@ public class Tests
 		Debug.Log("coImmediate finished " + CoRunner.FrameCount);
 	}
 
+	public IEnumerator coYieldForFrames (int numFrames)
+	{
+		for (int i = 0; i < numFrames; i++) {
+			yield return null;
+		}
+	}
+
 	public IEnumerator coYieldOn (IEnumerator enumerator)
 	{
 		yield return enumerator;
@@ -77,7 +84,9 @@ public class Tests
 
 	public IEnumerator coMultiYield ()
 	{
-		var routine = CoRunner.Start(coWWW());
+		var routine = CoRunner.Start(coYieldForFrames(5));
+
+		// make to routines yield on the same ienumerator
 		CoRunner.Start(coYieldOn(routine));
 		yield return CoRunner.Start(coYieldOn(routine));
 		Debug.Log("finished MultiYield " + CoRunner.FrameCount);

@@ -19,7 +19,10 @@ public static class CoRunner
 	private static void Init ()
 	{
 		#if UNITY_EDITOR
-		EditorApplication.update += Update;
+		if (!Application.isPlaying) {
+			Debug.Log("hook up to editor.update");
+			EditorApplication.update += Update;
+		}
 		#endif
 
 		if (Application.isPlaying) {
@@ -59,11 +62,20 @@ public static class CoRunner
 		AddRoutines();
 		if (routines.Count > 0) Debug.Log("update count: " + routines.Count);
 		routines.RemoveWhere(Process);
+		routines.RemoveWhere(ProcessOnlyNested);
 	}
 
 	static bool Process (IEnumerator routine) {
 		if (ShouldCall(routine.Current)) {
 			return !AdvanceEnumerator(routine);
+		}
+		return false;
+	}
+
+	static bool ProcessOnlyNested (IEnumerator routine)
+	{
+		if (routine.Current is IEnumerator) {
+			return Process(routine);
 		}
 		return false;
 	}

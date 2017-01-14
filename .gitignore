@@ -2,3 +2,4 @@
 /Library
 *.sln
 *.csproj
+/obj

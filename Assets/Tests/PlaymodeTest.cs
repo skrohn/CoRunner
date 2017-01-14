@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.TestTools;
 using NUnit.Framework;
 using System.Collections;
@@ -51,14 +52,71 @@ public class PlaymodeTest
 		yield return Await();
 	}
 
+	[UnityTest]
+	public IEnumerator AwaitResult  ()
+	{
+		Debug.Log("start coReturnInt " + Time.frameCount);
+		var result = 10;
+		CoRunner.Start(coRunTest(tests.coReturnInt(result), 3, result));
+		yield return Await();
+	}
+
+	[UnityTest]
+	public IEnumerator AwaitSpiegel ()
+	{
+		Debug.Log("start coReturnWWW " + Time.frameCount);
+		var url = "http://www.spiegel.de";
+		Predicate<string> assertion = s => !string.IsNullOrEmpty(s);
+
+		CoRunner.Start(coRunTest(tests.coReturnWWW(url), assertion));
+		yield return Await();
+	}
+
+	[UnityTest]
+	public IEnumerator AwaitGoogle ()
+	{
+		Debug.Log("start coReturnWWW " + Time.frameCount);
+		var url = "http://www.google.de";
+		Predicate<string> assertion = s => !string.IsNullOrEmpty(s);
+
+		CoRunner.Start(coRunTest(tests.coReturnWWW(url), assertion));
+		yield return Await();
+	}
+
+	IEnumerator coRunTest<T> (IEnumerator coTest, Predicate<T> assert)
+	{
+		isFinished = false;
+		int startFrame = Time.frameCount;
+		Debug.Log("start " + coTest + " " + Time.frameCount);
+		var result = CoRunner.Start<T>(coTest);
+		yield return result;
+		Debug.Log("finished " + Time.frameCount);
+		Assert.True(assert(result.ReturnValue), coTest.ToString());
+		isFinished = true;
+	}
+
 	IEnumerator coRunTest (IEnumerator coTest, int expectedDuration)
 	{
 		isFinished = false;
 		int startFrame = Time.frameCount;
 		Debug.Log("start " + coTest + " " + Time.frameCount);
 		yield return CoRunner.Start(coTest);
-		Debug.Log(Time.frameCount);
+		Debug.Log("finished " + Time.frameCount);
 		Assert.AreEqual(startFrame + expectedDuration, Time.frameCount, coTest.ToString());
+		isFinished = true;
+	}
+
+	IEnumerator coRunTest<T> (IEnumerator coTest, int expectedDuration, T expectedResult)
+	{
+		isFinished = false;
+		int startFrame = Time.frameCount;
+		Debug.Log("start " + coTest + " " + Time.frameCount);
+		var result = CoRunner.Start<T>(coTest);
+		Debug.Log(result);
+		yield return result;
+		Debug.Log("finished at " + Time.frameCount);
+		Assert.AreEqual(startFrame + expectedDuration, Time.frameCount, coTest.ToString());
+		Assert.AreEqual(expectedResult, result.ReturnValue);
 		isFinished = true;
 	}
 

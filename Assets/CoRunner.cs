@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Wooga.Coroutines;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -10,6 +10,7 @@ public static class CoRunner
 {
 	private static readonly HashSet<IEnumerator> routines = new HashSet<IEnumerator>();
 	private static readonly List<IEnumerator> routinesToAdd = new List<IEnumerator>();
+	private static readonly List<IEnumerator> routinesToRemove = new List<IEnumerator>(10);
 
 	private static UniProxy proxy;
 	private static bool isInitialized;
@@ -37,6 +38,19 @@ public static class CoRunner
 
 	public static IEnumerator Start (IEnumerator routine)
 	{
+		StartInternal(routine);
+		return routine;
+	}
+
+	public static Wooroutine<T> Start<T> (IEnumerator routine)
+	{
+		var wr = new Wooroutine<T>(routine);
+		StartInternal(wr);
+		return wr;
+	}
+
+	static void StartInternal (IEnumerator routine)
+	{
 		if (!isInitialized) Init();
 
 		var hasNext = AdvanceEnumerator(routine);
@@ -44,7 +58,6 @@ public static class CoRunner
 		if (hasNext) {
 			routinesToAdd.Add(routine);
 		}
-		return routine;
 	}
 
 	static bool AdvanceEnumerator (IEnumerator routine)
@@ -60,13 +73,45 @@ public static class CoRunner
 	{
 		FrameCount++;
 		AddRoutines();
-		if (routines.Count > 0) Debug.Log("update count: " + routines.Count);
-		routines.RemoveWhere(Process);
-		routines.RemoveWhere(ProcessOnlyNested);
+
+		ProcessAll();
+
+		while (routinesToRemove.Count > 0) {
+			RemoveFinishedRoutines();
+			ProcessAllNested();
+		}
+	}
+
+	static void RemoveFinishedRoutines ()
+	{
+		foreach (var routine in routinesToRemove) {
+			routines.Remove(routine);
+		}
+		routinesToRemove.Clear();
+	}
+
+	static void ProcessAll ()
+	{
+		foreach (var routine in routines) {
+			if (Process(routine)) {
+				routinesToRemove.Add(routine);
+			}
+		}
+	}
+
+	static void ProcessAllNested ()
+	{
+		foreach (var routine in routines) {
+			if (ProcessOnlyNested(routine)) {
+				routinesToRemove.Add(routine);
+			}
+		}
 	}
 
 	static bool Process (IEnumerator routine) {
 		if (ShouldCall(routine.Current)) {
+			var wr = routine as Wooroutine;
+			if (wr != null && wr.Canceled) { return true;}
 			return !AdvanceEnumerator(routine);
 		}
 		return false;
@@ -75,6 +120,9 @@ public static class CoRunner
 	static bool ProcessOnlyNested (IEnumerator routine)
 	{
 		if (routine.Current is IEnumerator) {
+			// TODO check if this is till neeeded 
+			var wr = routine as Wooroutine;
+			if (wr != null && wr.Canceled) { return true;}
 			return Process(routine);
 		}
 		return false;
@@ -90,6 +138,8 @@ public static class CoRunner
 
 	static bool IsFinished (IEnumerator enumerator)
 	{
+		var cyi = enumerator as CustomYieldInstruction;
+		if (cyi != null) return !cyi.keepWaiting;
 		return !routines.Contains(enumerator) && !routinesToAdd.Contains(enumerator);
 	}
 
@@ -98,17 +148,25 @@ public static class CoRunner
 		if (obj == null) return true;
 
 		CustomYieldInstruction inst = obj as CustomYieldInstruction;
-		if (inst != null) return !inst.keepWaiting;
+		if (inst != null) {
+			return !inst.keepWaiting;
+		}
 
 		if (obj is WWW) {
 			return ((WWW) obj).isDone;
+		}
+
+		if (obj is AsyncOperation) {
+			return ((AsyncOperation) obj).isDone;
 		}
 
 		if (obj is IEnumerator) {
 			return IsFinished((IEnumerator) obj);
 		}
 
-		Debug.LogWarning("Didn't know what to do with " + obj.GetType());
+		if (obj is YieldInstruction) {
+			Debug.LogError("Didn't know what to do with " + obj.GetType());
+		}
 		return true;
 	}
 

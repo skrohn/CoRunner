@@ -1,40 +1,105 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
+using Wooga.Coroutines;
 
 public class Test : MonoBehaviour {
 
 	Tests tests = new Tests();
 
-	void Start ()
+	IEnumerator Start ()
 	{
+		yield return null;
 //		CoRunner.Start(coBasic());
 //		CoRunner.Start(tests.coWWW());
-		CoRunner.Start(tests.coIEnumerator());
+//		CoRunner.Start(tests.coIEnumerator());
 //		CoRunner.Start(coRunImmediate());
 //		CoRunner.Start(coMultiYield());
-//		CoRunner.Start(coImmediateMultiYield());
+//		CoRunner.Start(tests.coImmediateMultiYield());
+//		CoRunner.Start(tests.coYieldForFrames(10));
+//		CoRunner.Start(tests.coAwaitResult());
+//		CoRunner.Start(tests.coAwaitCanceledResult());
+		CoRunner.Start(tests.coAwaitNull());
 	}
 }
 
 public class Tests
 {
+	public IEnumerator coAwaitResult ()
+	{
+		var x = CoRunner.Start<int>(coReturnInt(5));
+		yield return x;
+		Debug.Log(x.ReturnValue);
+	}
+
+	public IEnumerator coAwaitNull ()
+	{
+		var result = CoRunner.Start<int>(coReturnNull());
+		yield return result;
+		Debug.Log("done at " + Time.frameCount + " " + result.ReturnValue);
+	}
+
+	public IEnumerator coReturnNull ()
+	{
+		yield return null;
+	}
+
+	public IEnumerator coAwaitCanceledResult ()
+	{
+		var x = CoRunner.Start<int>(coReturnInt(5));
+		CoRunner.Start(coCancel(1, x));
+		yield return x;
+		Debug.Log("done yielding " + Time.frameCount);
+		Debug.Log(x.ReturnValue);
+	}
+
+	public IEnumerator coCancel<T> (int numFrames, Wooroutine<T> routine)
+	{
+//		Debug.Log("start stop routine " + Time.frameCount);
+		yield return WaitForFrames.Wait(1);
+//		Debug.Log("stop at " + Time.frameCount);
+		routine.Stop();
+	}
+
+	public IEnumerator coReturnInt (int x)
+	{
+		yield return null;
+		yield return null;
+		yield return null;
+		Debug.Log("return int at " + Time.frameCount);
+		yield return x;
+	}
+
+	public IEnumerator coReturnWWW (string url)
+	{
+		Debug.Log(Time.frameCount);
+		var req = UnityWebRequest.Get(url);
+		yield return req.Send();
+		Debug.Log(Time.frameCount);
+		Debug.Log(req.error + " " + req.isError);
+		Debug.Log(req.downloadHandler.text);
+		yield return req.downloadHandler.text;
+	}
+
 	public IEnumerator coImmediateMultiYield ()
 	{
 		var routine = CoRunner.Start(coBasic());
 		var r2 = CoRunner.Start(coYieldOn(routine));
-		Debug.Log("start " + CoRunner.FrameCount);
+//		Debug.Log("start " + CoRunner.FrameCount);
 		yield return r2;
 		yield return CoRunner.Start(coImmediate());
 		yield return CoRunner.Start(coImmediate());
-		Debug.Log("coImmediateMultiYield finished " + CoRunner.FrameCount);
+//		Debug.Log("coImmediateMultiYield finished " + CoRunner.FrameCount);
 	}
 
 	public IEnumerator coBasic ()
 	{
-		Debug.Log("coBasic started " + CoRunner.FrameCount + " " + Time.frameCount);
+//		Debug.Log("coBasic started " + CoRunner.FrameCount + " " + Time.frameCount);
 		yield return null;
-		Debug.Log("coBasic finished " + CoRunner.FrameCount + " " + Time.frameCount);
+//		Debug.Log("coBasic finished " + CoRunner.FrameCount + " " + Time.frameCount);
 	}
 
 	public IEnumerator coWWW ()
@@ -48,9 +113,9 @@ public class Tests
 
 	public IEnumerator coIEnumerator ()
 	{
-		Debug.Log(CoRunner.FrameCount);
+		Debug.Log("coIEnumerator start " + CoRunner.FrameCount);
 		yield return CoRunner.Start(coBasic());
-		Debug.Log("coIEnumerator finished " + CoRunner.FrameCount);
+		Debug.Log("coIEnumerator finished " + CoRunner.FrameCount + " " + Time.frameCount);
 	}
 
 	public IEnumerator coRunImmediate ()
@@ -62,11 +127,11 @@ public class Tests
 
 	public IEnumerator coImmediate ()
 	{
-		Debug.Log("start coImmediate " + CoRunner.FrameCount);
+//		Debug.Log("start coImmediate " + CoRunner.FrameCount);
 		if (Time.deltaTime < 0) {
 			yield return null;
 		}
-		Debug.Log("coImmediate finished " + CoRunner.FrameCount);
+//		Debug.Log("coImmediate finished " + CoRunner.FrameCount);
 	}
 
 	public IEnumerator coYieldForFrames (int numFrames)
@@ -74,12 +139,13 @@ public class Tests
 		for (int i = 0; i < numFrames; i++) {
 			yield return null;
 		}
+		Debug.Log("coYieldForFrames finished " + Time.frameCount);
 	}
 
 	public IEnumerator coYieldOn (IEnumerator enumerator)
 	{
 		yield return enumerator;
-		Debug.Log("finished YieldOn " + CoRunner.FrameCount);
+//		Debug.Log("finished YieldOn " + CoRunner.FrameCount);
 	}
 
 	public IEnumerator coMultiYield ()
@@ -90,5 +156,30 @@ public class Tests
 		CoRunner.Start(coYieldOn(routine));
 		yield return CoRunner.Start(coYieldOn(routine));
 		Debug.Log("finished MultiYield " + CoRunner.FrameCount);
+	}
+}
+
+public class WaitForFrames : CustomYieldInstruction
+{
+	public static WaitForFrames Wait (int numFrames)
+	{
+		return new WaitForFrames(numFrames);
+	}
+
+	private int startFrame;
+	private int endFrame;
+
+	public WaitForFrames (int numFrames)
+	{
+		startFrame = Time.frameCount;
+		endFrame = startFrame + numFrames;
+//		Debug.Log("endframe " + endFrame);
+	}
+
+	public override bool keepWaiting {
+		get {
+//			Debug.Log(Time.frameCount + " " + endFrame + " " + (Time.frameCount < endFrame));
+			return Time.frameCount < endFrame;
+		}
 	}
 }

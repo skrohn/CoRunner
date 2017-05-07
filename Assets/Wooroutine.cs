@@ -6,7 +6,10 @@ namespace Wooga.Coroutines
 {
     public class Wooroutine : IEnumerator
     {
+        public class WaitForNextFrame {}
+
 	    public const string CALLED_BY = "calledBy";
+        public readonly WaitForNextFrame NextFrame  = new WaitForNextFrame();
 
         public Exception Exception { get; protected set; }
 

@@ -79,8 +79,8 @@ public class Tests
 		var req = UnityWebRequest.Get(url);
 		yield return req.Send();
 		Debug.Log(Time.frameCount);
-		Debug.Log(req.error + " " + req.isError);
-		Debug.Log(req.downloadHandler.text);
+		Debug.Log("error?: " + req.error + " " + req.isError);
+		Debug.Log("text: " + req.downloadHandler.text);
 		yield return req.downloadHandler.text;
 	}
 

@@ -49,6 +49,11 @@ public static class CoRunner
 		return wr;
 	}
 
+	public static void Stop (IEnumerator routine)
+	{
+		routinesToRemove.Add(routine);
+	}
+
 	static void StartInternal (IEnumerator routine)
 	{
 		if (!isInitialized) Init();
@@ -120,7 +125,7 @@ public static class CoRunner
 	static bool ProcessOnlyNested (IEnumerator routine)
 	{
 		if (routine.Current is IEnumerator) {
-			// TODO check if this is till neeeded 
+			// TODO check if this is till neeeded
 			var wr = routine as Wooroutine;
 			if (wr != null && wr.Canceled) { return true;}
 			return Process(routine);

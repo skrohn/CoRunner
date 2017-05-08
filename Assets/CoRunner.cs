@@ -175,4 +175,31 @@ public static class CoRunner
 		return true;
 	}
 
+	public class WaitForFrames : CustomYieldInstruction
+	{
+		private int endFrame = -1;
+
+		public WaitForFrames (int numFrames)
+		{
+			endFrame = Time.frameCount + numFrames;
+		}
+
+		public WaitForFrames WaitOne ()
+		{
+			endFrame = Time.frameCount + 1;
+			return this;
+		}
+
+		public override bool keepWaiting {
+			get {
+				return Time.frameCount < endFrame;
+			}
+		}
+	}
+}
+
+public class WaitForFrames : CoRunner.WaitForFrames
+{
+	public WaitForFrames (int numFrames) : base(numFrames) { }
+}
 }

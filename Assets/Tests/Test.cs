@@ -59,7 +59,7 @@ public class Tests
 	public IEnumerator coCancel<T> (int numFrames, Wooroutine<T> routine)
 	{
 //		Debug.Log("start stop routine " + Time.frameCount);
-		yield return WaitForFrames.Wait(1);
+		yield return new WaitForFrames(1);
 //		Debug.Log("stop at " + Time.frameCount);
 		routine.Stop();
 	}
@@ -97,9 +97,15 @@ public class Tests
 
 	public IEnumerator coBasic ()
 	{
-//		Debug.Log("coBasic started " + CoRunner.FrameCount + " " + Time.frameCount);
-		yield return null;
-//		Debug.Log("coBasic finished " + CoRunner.FrameCount + " " + Time.frameCount);
+		yield return new WaitForFrames(1);
+	}
+
+	public IEnumerator coStartOnYield ()
+	{
+		var wait = new WaitForFrames(1);
+		yield return wait.WaitOne();
+		yield return wait.WaitOne();
+		yield return coBasic();
 	}
 
 	public IEnumerator coWWW ()
@@ -136,9 +142,7 @@ public class Tests
 
 	public IEnumerator coYieldForFrames (int numFrames)
 	{
-		for (int i = 0; i < numFrames; i++) {
-			yield return null;
-		}
+		yield return new WaitForFrames(numFrames);
 		Debug.Log("coYieldForFrames finished " + Time.frameCount);
 	}
 

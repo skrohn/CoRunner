@@ -76,7 +76,7 @@ public class PlaymodeTest
 	{
 		var url = "http://www.spiegel.de";
 		var en = tests.coReturnWWW(url);
-		CoRunner.Start(coRunTest(en, 1));
+		CoRunner.Start(coRunTest(en, 2));
 		yield return null;
 		Debug.Log("stop at " + Time.frameCount);
 		CoRunner.Stop(en);

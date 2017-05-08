@@ -133,9 +133,6 @@ public static class CoRunner
 	static bool ProcessOnlyNested (IEnumerator routine)
 	{
 		if (routine.Current is IEnumerator) {
-			// TODO check if this is till neeeded
-			var wr = routine as Wooroutine;
-			if (wr != null && wr.Canceled) { return true;}
 			return Process(routine);
 		}
 		return false;
@@ -232,5 +229,15 @@ public static class IEnumeratorExtensions
 			return (int)field.GetValue(enumerator);
 		}
 		return 1;
+	}
+
+	public static IEnumerator Start (this IEnumerator enumerator)
+	{
+		return CoRunner.Start(enumerator);
+	}
+
+	public static Wooroutine<T> Start<T> (this IEnumerator enumerator)
+	{
+		return CoRunner.Start<T>(enumerator);
 	}
 }

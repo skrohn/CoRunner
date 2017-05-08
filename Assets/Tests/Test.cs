@@ -22,7 +22,8 @@ public class Test : MonoBehaviour {
 //		CoRunner.Start(tests.coYieldForFrames(10));
 //		CoRunner.Start(tests.coAwaitResult());
 //		CoRunner.Start(tests.coAwaitCanceledResult());
-		CoRunner.Start(tests.coAwaitNull());
+//		CoRunner.Start(tests.coAwaitNull());
+		CoRunner.Start(tests.coStartOnYield());
 	}
 }
 
@@ -88,11 +89,9 @@ public class Tests
 	{
 		var routine = CoRunner.Start(coBasic());
 		var r2 = CoRunner.Start(coYieldOn(routine));
-//		Debug.Log("start " + CoRunner.FrameCount);
 		yield return r2;
 		yield return CoRunner.Start(coImmediate());
 		yield return CoRunner.Start(coImmediate());
-//		Debug.Log("coImmediateMultiYield finished " + CoRunner.FrameCount);
 	}
 
 	public IEnumerator coBasic ()
@@ -128,16 +127,21 @@ public class Tests
 	{
 		Debug.Log(CoRunner.FrameCount);
 		yield return CoRunner.Start(coImmediate());
+		yield return coReturnString();
 		Debug.Log("coRunImmediate finished " + CoRunner.FrameCount);
 	}
 
 	public IEnumerator coImmediate ()
 	{
-//		Debug.Log("start coImmediate " + CoRunner.FrameCount);
+		// do nothing
 		if (Time.deltaTime < 0) {
 			yield return null;
 		}
-//		Debug.Log("coImmediate finished " + CoRunner.FrameCount);
+	}
+
+	public IEnumerator coReturnString ()
+	{
+		yield return "test";
 	}
 
 	public IEnumerator coYieldForFrames (int numFrames)
@@ -149,7 +153,6 @@ public class Tests
 	public IEnumerator coYieldOn (IEnumerator enumerator)
 	{
 		yield return enumerator;
-//		Debug.Log("finished YieldOn " + CoRunner.FrameCount);
 	}
 
 	public IEnumerator coMultiYield ()
@@ -158,32 +161,8 @@ public class Tests
 
 		// make to routines yield on the same ienumerator
 		CoRunner.Start(coYieldOn(routine));
-		yield return CoRunner.Start(coYieldOn(routine));
+		yield return coYieldOn(routine);
 		Debug.Log("finished MultiYield " + CoRunner.FrameCount);
 	}
 }
 
-public class WaitForFrames : CustomYieldInstruction
-{
-	public static WaitForFrames Wait (int numFrames)
-	{
-		return new WaitForFrames(numFrames);
-	}
-
-	private int startFrame;
-	private int endFrame;
-
-	public WaitForFrames (int numFrames)
-	{
-		startFrame = Time.frameCount;
-		endFrame = startFrame + numFrames;
-//		Debug.Log("endframe " + endFrame);
-	}
-
-	public override bool keepWaiting {
-		get {
-//			Debug.Log(Time.frameCount + " " + endFrame + " " + (Time.frameCount < endFrame));
-			return Time.frameCount < endFrame;
-		}
-	}
-}

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using Wooga.Coroutines;
 #if UNITY_EDITOR
@@ -70,7 +71,14 @@ public static class CoRunner
 		bool hasNext;
 		do {
 			hasNext = routine.MoveNext();
-		} while (hasNext && routine.Current is IEnumerator && IsFinished((IEnumerator)routine.Current));
+			var enumerator = routine.Current as IEnumerator;
+			if (enumerator != null) {
+				if (!enumerator.IsRunning()) {
+					Start(enumerator);
+				}
+			}
+
+		} while (hasNext && ShouldCall(routine.Current));
 		return hasNext;
 	}
 
@@ -148,10 +156,9 @@ public static class CoRunner
 		return !routines.Contains(enumerator) && !routinesToAdd.Contains(enumerator);
 	}
 
+
 	private static bool ShouldCall (object obj)
 	{
-		if (obj == null) return true;
-
 		CustomYieldInstruction inst = obj as CustomYieldInstruction;
 		if (inst != null) {
 			return !inst.keepWaiting;
@@ -202,4 +209,28 @@ public class WaitForFrames : CoRunner.WaitForFrames
 {
 	public WaitForFrames (int numFrames) : base(numFrames) { }
 }
+
+
+public static class IEnumeratorExtensions
+{
+	public static bool IsRunning (this IEnumerator enumerator)
+	{
+		return GetState(enumerator) > 0;
+
+	}
+
+	public static bool IsFinished (IEnumerator enumerator)
+	{
+		return GetState(enumerator) == -1;
+	}
+
+	static int GetState (IEnumerator enumerator)
+	{
+		var type = enumerator.GetType();
+		var field = type.GetField("$PC", BindingFlags.NonPublic | BindingFlags.Instance);
+		if (field != null) {
+			return (int)field.GetValue(enumerator);
+		}
+		return 1;
+	}
 }

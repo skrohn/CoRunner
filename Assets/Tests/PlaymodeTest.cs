@@ -56,7 +56,7 @@ public class PlaymodeTest
 	{
 		Debug.Log("start coReturnInt " + Time.frameCount);
 		var result = 10;
-		CoRunner.Start(coRunTest(tests.coReturnInt(result), 3, result));
+		CoRunner.Start(coRunTest(tests.coReturnInt(result), 0, result));
 		yield return Await();
 	}
 
@@ -80,6 +80,14 @@ public class PlaymodeTest
 		yield return null;
 		Debug.Log("stop at " + Time.frameCount);
 		CoRunner.Stop(en);
+		yield return Await();
+	}
+
+	[UnityTest]
+	public IEnumerator StartOnYield ()
+	{
+		var en = tests.coStartOnYield();
+		CoRunner.Start(coRunTest(en, 3));
 		yield return Await();
 	}
 
